@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: priceradar_mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: priceradar
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - priceradar_network
+
+  backend:
+    build: ./backend
+    container_name: priceradar_backend
+    ports:
+      - "8000:8000"
+    environment:
+      MONGODB_URL: mongodb://admin:password@mongodb:27017
+      DATABASE_NAME: priceradar
+      DEBUG: "True"
+      SECRET_KEY: your-secret-key-here
+      ALLOWED_ORIGINS: http://localhost:3000,http://localhost:8000
+    depends_on:
+      - mongodb
+    networks:
+      - priceradar_network
+    volumes:
+      - ./backend:/app
+
+  frontend:
+    build: ./frontend
+    container_name: priceradar_frontend
+    ports:
+      - "3000:3000"
+    environment:
+      REACT_APP_API_URL: http://localhost:8000/api
+    depends_on:
+      - backend
+    networks:
+      - priceradar_network
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
+volumes:
+  mongodb_data:
+
+networks:
+  priceradar_network:
+    driver: bridge
